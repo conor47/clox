@@ -6,7 +6,7 @@
 void initValueArray(ValueArray* array) {
     array->values = NULL;
     array->capacity = 0;
-    array->count = NULL;
+    array->count = 0;
 }
 
 void writeValueArray(ValueArray* array, Value value) {
@@ -23,4 +23,8 @@ void writeValueArray(ValueArray* array, Value value) {
 void freeValueArray(ValueArray* array) {
     FREE_ARRAY(Value, array->values, array->capacity);
     initValueArray(array);
+}
+
+void printValue(Value value) {
+    printf("%g", value);
 }
