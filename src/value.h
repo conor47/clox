@@ -3,14 +3,6 @@
 
 #include "common.h"
 
-typedef double Value; 
-
-typedef struct {
-    int capacity;
-    int count;
-    Value* values;
-} ValueArray;
-
 typedef enum {
     VAL_BOOL,
     VAL_NIL,
@@ -25,6 +17,12 @@ typedef struct {
     } as;
 } Value;
 
+typedef struct {
+    int capacity;
+    int count;
+    Value* values;
+} ValueArray;
+
 #define IS_BOOL(value)    ((value).type == VAL_BOOL)
 #define IS_NIL(value)     ((value).type == VAL_NIL)
 #define IS_NUMBER(value)  ((value).type == VAL_NUMBER)
@@ -37,6 +35,7 @@ typedef struct {
 #define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 
+bool valuesEqual(Value a, Value b);
 void initValueArray(ValueArray* array);
 void writeValueArray(ValueArray* array, Value);
 void freeValueArray(ValueArray* array);
