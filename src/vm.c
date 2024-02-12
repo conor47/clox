@@ -31,6 +31,7 @@ static void runTimeError(const char* format, ...) {
 
 void initVM() {
     resetStack();
+    vm.objects = NULL;
 }
 
 void freeVM() {
@@ -122,7 +123,7 @@ static InterpretResult run() {
                     double a = AS_NUMBER(pop());
                     push(NUMBER_VAL(a + b));
                 } else {
-                    runtimeError("Operands must be two numbers or two strings");
+                    runTimeError("Operands must be two numbers or two strings");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -170,3 +171,4 @@ InterpretResult interpret(const char* source) {
     freeChunk(&chunk);
     return result;
 }
+
