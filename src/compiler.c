@@ -167,6 +167,9 @@ static void patchJump(int offset);
 static void beginScope();
 static void endScope();
 static void and_(bool canAssign);
+static void initCompiler(Compiler* compiler, FunctionType type);
+static ObjFunction* endCompiler();
+static uint8_t makeConstant(Value value);
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
@@ -204,6 +207,16 @@ static void function(FunctionType type) {
     beginScope();
     
     consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            current->function->arity++;
+            if (current->function->arity > 255) {
+                errorAtCurrent("Can't have more than 255 parameters.");
+            }
+            uint8_t constant = parseVariable("Expect parameter name.");
+            defineVariable(constant);
+        } while (match(TOKEN_COMMA));
+    }
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
     consume(TOKEN_LEFT_BRACE, "Expect '{' before a function body.");
     block();
@@ -410,6 +423,9 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     compiler->scopeDepth = 0;
     compiler->function = newFunction();
     current = compiler;
+    if (type != TYPE_SCRIPT) {
+        current->function->name = copyString(parser.previous.start, parser.previous.length);
+    }
     
     // implicitly claim VM stack slot 0 for VM internal use
     Local* local = &current->locals[current->localCount++];
