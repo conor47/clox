@@ -32,7 +32,7 @@ static void runTimeError(const char* format, ...) {
         if (function->name == NULL) {
             fprintf(stderr, "script\n");
         } else {
-            fprtinf(stderr, "%s()\n", function->name->chars);
+            fprintf(stderr, "%s()\n", function->name->chars);
         }
     }
 
@@ -95,7 +95,7 @@ static bool callValue(Value callee, int argCount) {
                 break;
         }
     }
-    runtimeError("Can only call functions and classes");
+    runTimeError("Can only call functions and classes");
     return false;
 }
 
@@ -256,7 +256,17 @@ static InterpretResult run() {
                 break;
             }
             case OP_RETURN: {
-                return INTERPRET_OK;
+                Value result = pop();
+                vm.frameCount--;
+                if (vm.frameCount == 0) {
+                    pop();
+                    return INTERPRET_OK;
+                }
+                
+                vm.stackTop = frame->slots;
+                push(result);
+                frame = &vm.frames[vm.frameCount -1];
+                break;
             }
     }
     }

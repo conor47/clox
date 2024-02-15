@@ -149,6 +149,7 @@ static int emitJump(uint8_t instruction) {
 }
 
 static void emitReturn() {
+    emitByte(OP_NIL);
     emitByte(OP_RETURN);
 }
 
@@ -170,6 +171,7 @@ static void and_(bool canAssign);
 static void initCompiler(Compiler* compiler, FunctionType type);
 static ObjFunction* endCompiler();
 static uint8_t makeConstant(Value value);
+static uint8_t argumentList();
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
@@ -306,6 +308,20 @@ static void printStatement() {
     emitByte(OP_PRINT);
 }
 
+static void returnStatement() {
+    if (current->type == TYPE_SCRIPT) {
+        error("Can't return from top-level code");
+    }
+
+    if (match(TOKEN_SEMICOLON)) {
+        emitReturn();
+    } else {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+        emitByte(OP_RETURN);
+    }
+}
+
 static void whileStatement() {
     int loopStart = currentChunk()->count;
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
@@ -378,6 +394,8 @@ static void statement() {
         forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_RETURN)) {
+        returnStatement();
     } else if (match(TOKEN_WHILE)) {
         whileStatement();
     } else if (match(TOKEN_LEFT_BRACE)) {
@@ -469,7 +487,7 @@ static void binary(bool canAssign) {
 }
 
 static void call(bool canAssign) {
-    uint8_t argCount = arguementList();
+    uint8_t argCount = argumentList();
     emitBytes(OP_CALL, argCount);
 }
 
