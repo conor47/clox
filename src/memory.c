@@ -11,7 +11,7 @@
 void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
     if (newSize > oldSize) {
         #ifdef DEBUG_STRESS_GC
-        collectGarbage()
+        collectGarbage();
         #endif
     }
     if (newSize == 0) {
@@ -74,14 +74,16 @@ static void markRoots() {
     for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
         markValue(*slot);
     }
+    
+    markTable(&vm.globals);
 }
 
-void colllectGarbage() {
+void collectGarbage() {
     #ifdef DEBUG_LOG_GC
         printf("-- gc begin\n");
     #endif
         
-        markRoots()
+        markRoots();
         
     #ifdef DEBUG_LOG_GC
         printf("-- gc end\n");
