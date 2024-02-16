@@ -121,18 +121,17 @@ static bool callValue(Value callee, int argCount) {
     return false;
 }
 
-static ObjUpvalue* capturedUpvalue(Value* local) {
+static ObjUpvalue* captureUpvalue(Value* local) {
     ObjUpvalue* prevUpvalue = NULL;
     ObjUpvalue* upvalue = vm.openUpvalues;
+
     while (upvalue != NULL && upvalue->location > local) {
         prevUpvalue = upvalue;
         upvalue = upvalue->next;
     }
 
-    if (upvalue != NULL && upvalue->location == local) {
-        return upvalue;
-    }
-
+    if (upvalue != NULL && upvalue->location == local) return upvalue;
+    
     ObjUpvalue* createdUpvalue = newUpvalue(local);
     createdUpvalue->next = upvalue;
 
@@ -143,6 +142,16 @@ static ObjUpvalue* capturedUpvalue(Value* local) {
     }
     
     return createdUpvalue;
+}
+
+static void closeUpvalues(Value* last) {
+  while (vm.openUpvalues != NULL &&
+         vm.openUpvalues->location >= last) {
+    ObjUpvalue* upvalue = vm.openUpvalues;
+    upvalue->closed = *upvalue->location;
+    upvalue->location = &upvalue->closed;
+    vm.openUpvalues = upvalue->next;
+  }
 }
 
 static bool isFalsey(Value value) {
@@ -327,8 +336,13 @@ static InterpretResult run() {
                 }
                 break;
             }
+            case OP_CLOSE_UPVALUE:
+                closeUpvalues(vm.stackTop - 1);
+                pop();
+                break;
             case OP_RETURN: {
                 Value result = pop();
+                closeUpvalues(frame->slots);
                 vm.frameCount--;
                 if (vm.frameCount == 0) {
                     pop();

@@ -179,6 +179,7 @@ static void initCompiler(Compiler* compiler, FunctionType type);
 static ObjFunction* endCompiler();
 static uint8_t makeConstant(Value value);
 static uint8_t argumentList();
+static int resolveUpvalue(Compiler* compiler, Token* name);
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
@@ -701,7 +702,7 @@ static int resolveLocal(Compiler* compiler, Token* name) {
     return -1;
 }
 
-static int addUpValue(Compiler* compiler, uint8_t index, bool isLocal) {
+static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
     int upvalueCount = compiler->function->upvalueCount;
     
     for (int i = 0; i < upvalueCount; i++) {
@@ -730,9 +731,9 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
         return addUpvalue(compiler, (uint8_t)local, true);
     }
     
-    int upvalue = resolveUpValue(compiler->enclosing, name);
+    int upvalue = resolveUpvalue(compiler->enclosing, name);
         if (upvalue != -1) {
-            return addUpValue(compiler, (uint8_t)upvalue, false);
+            return addUpvalue(compiler, (uint8_t)upvalue, false);
         }
     
     return -1;
