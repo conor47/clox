@@ -7,6 +7,7 @@
 #include "scanner.h"
 #include "object.h"
 #include "memory.h"
+#include "vm.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -809,6 +810,6 @@ void markCompilerRoots() {
     Compiler* compiler = current;
     while (compiler != NULL) {
         markObject((Obj*)compiler->function);
-        compiler = compile->enclosing;
+        compiler = compiler->enclosing;
     }
 }
