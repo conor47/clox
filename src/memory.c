@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "memory.h"
+#include "compiler.h"
 #include "vm.h"
 
 #ifdef DEBUG_LOG_GC
@@ -32,6 +33,15 @@ void markObject(Obj* object) {
         printf("\n");
     #endif
     object->isMarked = true;
+    
+    if (vm.grayCapacity < vm.grayCount + 1) {
+        vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
+        vm.grayStack = (Obj**)realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+        
+        if (vm.grayStack == NULL) exit(1);
+    }
+    
+    vm.grayStack[vm.grayCount++] = object;
 }
 
 void markValue(Value value) {
@@ -75,7 +85,16 @@ static void markRoots() {
         markValue(*slot);
     }
     
+    for (int i = 0;i < vm.frameCount; i++) {
+        markObject((Obj*)vm.frames[i].closure);
+    }
+    
+    for (ObjUpvalue* upvalue = vm.openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
+        markObject((Obj*)upvalue);
+    }
+    
     markTable(&vm.globals);
+    markCompilerRoots();
 }
 
 void collectGarbage() {
@@ -97,4 +116,6 @@ void freeObjects() {
         freeObject(object);
         object = next;
     }
+    
+    free(vm.grayStack);
 }
