@@ -56,6 +56,9 @@ static void defineNative(const char* name, NativeFn function) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    vm.bytesAllocated = 0;
+    // arbitrary initial limit. Ideally don't trigger GC to fast or wait too long
+    vm.nextGC = 1024 * 1024;
     
     vm.grayCount = 0;
     vm.grayCapacity = 0;
