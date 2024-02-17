@@ -70,8 +70,13 @@ Local locals[UINT8_COUNT];
     int scopeDepth;
 } Compiler;
 
+typedef struct ClassCompiler {
+    struct ClassCompiler* enclosing;
+} ClassCompiler;
+
 Parser parser;
 Compiler* current = NULL;
+ClassCompiler* currentClass = NULL;
 
 static Chunk* currentChunk() {
     return &current->function->chunk;
@@ -261,6 +266,10 @@ static void classDeclaration() {
     emitBytes(OP_CLASS, nameConstant);
     defineVariable(nameConstant);
     
+    ClassCompiler classCompiler;
+    classCompiler.enclosing = currentClass;
+    currentClass = &classCompiler;
+    
     namedVariable(className, false);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
@@ -268,6 +277,8 @@ static void classDeclaration() {
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' before class body.");
     emitByte(OP_POP);
+    
+    currentClass = currentClass->enclosing;
 }
 
 static void funDeclaration() {
@@ -621,6 +632,11 @@ static void variable(bool canAssign) {
 }
 
 static void this_(bool canAssign) {
+    if(currentClass == NULL) {
+        error("Can't use 'this' outside a class.");
+        return;
+    }
+
     variable(false);
 }
 
