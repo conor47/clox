@@ -73,7 +73,7 @@ Local locals[UINT8_COUNT];
 
 typedef struct ClassCompiler {
     struct ClassCompiler* enclosing;
-    bool hasSuperClass;
+    bool hasSuperclass;
 } ClassCompiler;
 
 Parser parser;
@@ -196,6 +196,10 @@ static uint8_t makeConstant(Value value);
 static uint8_t argumentList();
 static int resolveUpvalue(Compiler* compiler, Token* name);
 static void namedVariable(Token name, bool canAssign);
+static void variable(bool canAssign);
+static bool identifiersEqual(Token* a, Token* b);
+static void addLocal(Token name);
+static Token syntheticToken(const char* text);
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
@@ -278,7 +282,7 @@ static void classDeclaration() {
     defineVariable(nameConstant);
     
     ClassCompiler classCompiler;
-    classCompiler.hasSuperClass = false;
+    classCompiler.hasSuperclass = false;
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
     
@@ -292,7 +296,7 @@ static void classDeclaration() {
         
         namedVariable(className, false);
         emitByte(OP_INHERIT);
-        classCompiler.hasSuperClass = true;
+        classCompiler.hasSuperclass = true;
     }
     
     beginScope();
@@ -307,7 +311,7 @@ static void classDeclaration() {
     consume(TOKEN_RIGHT_BRACE, "Expect '}' before class body.");
     emitByte(OP_POP);
     
-    if (classCompiler.hasSuperClass) {
+    if (classCompiler.hasSuperclass) {
         endScope();
     }
     
@@ -679,6 +683,29 @@ static Token syntheticToken(const char* text) {
     return token;
 }
 
+static void super_(bool canAssign) {
+    if (currentClass == NULL) {
+        error("Can't use 'super' outside of a class.");
+    } else if (!currentClass->hasSuperclass) {
+        error("Can't use 'super' in a class with no superclass.");
+    }
+
+    consume(TOKEN_DOT, "Expect '.' after 'super'.");
+    consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
+    uint8_t name = identifierConstant(&parser.previous);
+    
+    namedVariable(syntheticToken("this"), false);
+    if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t argCount = argumentList();
+        namedVariable(syntheticToken("super"), false);
+        emitBytes(OP_SUPER_INVOKE, name);
+        emitByte(argCount);
+    } else {
+        namedVariable(syntheticToken("super"), false);
+        emitBytes(OP_GET_SUPER, name);
+    }
+}
+
 static void this_(bool canAssign) {
     if(currentClass == NULL) {
         error("Can't use 'this' outside a class.");
@@ -734,7 +761,7 @@ ParseRule rules[] = {
   [TOKEN_OR]            = {NULL,     or_,   PREC_OR},
   [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_SUPER]         = {super_,     NULL,   PREC_NONE},
   [TOKEN_THIS]          = {this_,     NULL,   PREC_NONE},
   [TOKEN_TRUE]          = {literal,     NULL,   PREC_NONE},
   [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
