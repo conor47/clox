@@ -73,6 +73,7 @@ Local locals[UINT8_COUNT];
 
 typedef struct ClassCompiler {
     struct ClassCompiler* enclosing;
+    bool hasSuperClass;
 } ClassCompiler;
 
 Parser parser;
@@ -277,6 +278,7 @@ static void classDeclaration() {
     defineVariable(nameConstant);
     
     ClassCompiler classCompiler;
+    classCompiler.hasSuperClass = false;
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
     
@@ -290,7 +292,12 @@ static void classDeclaration() {
         
         namedVariable(className, false);
         emitByte(OP_INHERIT);
+        classCompiler.hasSuperClass = true;
     }
+    
+    beginScope();
+    addLocal(syntheticToken("super"));
+    defineVariable(0);
     
     namedVariable(className, false);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -299,6 +306,10 @@ static void classDeclaration() {
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' before class body.");
     emitByte(OP_POP);
+    
+    if (classCompiler.hasSuperClass) {
+        endScope();
+    }
     
     currentClass = currentClass->enclosing;
 }
@@ -659,6 +670,13 @@ static void namedVariable(Token name, bool canAssign) {
 
 static void variable(bool canAssign) {
     namedVariable(parser.previous, canAssign);
+}
+
+static Token syntheticToken(const char* text) {
+    Token token;
+    token.start = text;
+    token.length = (int)strlen(text);
+    return token;
 }
 
 static void this_(bool canAssign) {
