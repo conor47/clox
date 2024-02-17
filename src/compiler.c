@@ -194,6 +194,7 @@ static ObjFunction* endCompiler();
 static uint8_t makeConstant(Value value);
 static uint8_t argumentList();
 static int resolveUpvalue(Compiler* compiler, Token* name);
+static void namedVariable(Token name, bool canAssign);
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
@@ -379,6 +380,10 @@ static void returnStatement() {
     if (match(TOKEN_SEMICOLON)) {
         emitReturn();
     } else {
+        if (current->type == TYPE_INITIALIZER) {
+            error ("Can't return a value from an initializer");
+        }
+
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emitByte(OP_RETURN);
@@ -575,6 +580,10 @@ static void dot(bool canAssign) {
     if(canAssign && match(TOKEN_EQUAL)) {
         expression();
         emitBytes(OP_SET_PROPERTY, name);
+    } else if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t argCount = argumentList();
+        emitBytes(OP_INVOKE, name);
+        emitByte(argCount);
     } else {
         emitBytes(OP_GET_PROPERTY, name);
     }
