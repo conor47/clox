@@ -7,7 +7,7 @@ OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 TARGET := $(BUILD_DIR)/program
 
 CC := gcc
-CFLAGS := -c -g -O0
+CFLAGS := -c 
 DFLAGS :=
 
 all: $(TARGET)
@@ -17,6 +17,7 @@ standard: DFLAGS += -DNAN_BOXING
 standard: $(TARGET)
 
 # Debug build with specific debug flags
+debug: CFLAGS += -g -O0
 debug: DFLAGS += -DDEBUG_LOG_GC -DDEBUG_PRINT_CODE -DDEBUG_TRACE_EXECUTION
 debug: $(TARGET)
 
