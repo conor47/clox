@@ -7,16 +7,28 @@ OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 TARGET := $(BUILD_DIR)/program
 
 CC := gcc
-# Add -g for debugging symbols and -O0 to disable optimizations
 CFLAGS := -c -g -O0
+DFLAGS :=
 
 all: $(TARGET)
+
+# Standard build with NAN_BOXING flag
+standard: DFLAGS += -DNAN_BOXING
+standard: $(TARGET)
+
+# Debug build with specific debug flags
+debug: DFLAGS += -DDEBUG_LOG_GC -DDEBUG_PRINT_CODE -DDEBUG_TRACE_EXECUTION
+debug: $(TARGET)
+
+# Stress test build with stress testing flags
+stress: DFLAGS += -DDEBUG_STRESS_GC -DDEBUG_LOG_GC
+stress: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(DFLAGS) $(CFLAGS) $< -o $@
 
 $(shell mkdir -p $(BUILD_DIR))
 

@@ -287,8 +287,6 @@ static InterpretResult run() {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
                 push(constant);
-                printValue(constant);
-                printf("\n");
             break;
             }
             case OP_NIL: push(NIL_VAL); break;
